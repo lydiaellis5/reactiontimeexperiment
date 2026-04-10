@@ -116,7 +116,7 @@
 
     <script>
         // 1. SETTINGS
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwOwXPyZSBGsNubFCytcWHMW0yLUBd9XLs5Y74Vt7itmpoO_7eC2W5yZFI_zoVep2eL/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwZXhaSZ9h6iCgqiz5eZ7i-U6ZDFiM3AAwaRHE1VmM4kRociJlcKoZsens8LGr8cKWQ/exec";
         
         let participantId = "";
         let trials = [];
@@ -171,18 +171,30 @@
         async function finishExperiment() {
             taskScreen.classList.add('hidden');
             resultsScreen.classList.remove('hidden');
-            document.getElementById('user-avg-text').innerText = "Analyzing data...";
+            document.getElementById('user-avg-text').innerText = "Uploading 10 trials...";
 
+            // Calculate current average for the red line on the chart
             const avgRT = trials.reduce((a, b) => a + b, 0) / trials.length;
-            console.log("Calculated Average:", avgRT);
+            
+            // Convert our array [250.5, 300.1...] into a string "250.5,300.1..."
+            const allTrialsString = trials.join(",");
 
             const callbackName = 'jsonp_' + Date.now();
             window[callbackName] = function(history) {
-                console.log("Historical data fetched:", history);
                 document.getElementById('user-avg-text').innerText = `Your Average RT: ${Math.round(avgRT)}ms`;
                 renderChart(history, avgRT);
                 delete window[callbackName];
             };
+
+            // NEW URL PARAMETER: allTrials instead of avg
+            const finalUrl = `${WEB_APP_URL}?id=${encodeURIComponent(participantId)}&allTrials=${allTrialsString}&callback=${callbackName}`;
+            
+            console.log("Sending all 10 trials to Google...");
+
+            const script = document.createElement('script');
+            script.src = finalUrl;
+            document.body.appendChild(script);
+        }
 
             // Build URL: id=B, avg=D. The Google Script handles "10 Trials" for C and Date for A.
             const finalUrl = `${WEB_APP_URL}?id=${encodeURIComponent(participantId)}&avg=${avgRT.toFixed(2)}&callback=${callbackName}`;
